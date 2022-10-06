@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "simple escrow smart contract example in javascript",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "ava"
   },
