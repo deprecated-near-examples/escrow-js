@@ -15,5 +15,11 @@
   "bugs": {
     "url": "https://github.com/idea404/escrow-js/issues"
   },
-  "homepage": "https://github.com/idea404/escrow-js#readme"
+  "homepage": "https://github.com/idea404/escrow-js#readme",
+  "dependencies": {
+    "near-sdk-js": "^0.5.0"
+  },
+  "devDependencies": {
+    "ava": "^4.3.3"
+  }
 }
