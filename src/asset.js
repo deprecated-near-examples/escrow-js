@@ -1,8 +1,9 @@
-import { call, LookupMap, NearBindgen, assert, near } from "near-sdk-js";
+import { call, LookupMap, NearBindgen, assert, near, view } from "near-sdk-js";
 
 @NearBindgen({ requireInit: true })
 export class AssetContract {
   ESCROW_CONTRACT_ID = "escrow.testnet";
+  ASSET_PRICE = "1" + "0".repeat(23); // 0.1 NEAR
   totalSupply = "0";
   accountAssets = new LookupMap("aa");
 
@@ -12,6 +13,16 @@ export class AssetContract {
     assert(this.totalSupply === "0", "Contract is already initialized");
     this.totalSupply = total_supply;
     this.accountAssets.set(owner_id, this.totalSupply);
+  }
+
+  @view({})
+  get_asset_price({}) {
+    return this.ASSET_PRICE;
+  }
+
+  @view({})
+  get_total_supply({}) {
+    return this.totalSupply;
   }
 
   @call({})
@@ -24,10 +35,10 @@ export class AssetContract {
     const sellerNewAssets = senderAssets - BigInt(quantity);
     this.accountAssets.set(from_account_id, sellerNewAssets.toString());
     if (this.accountAssets.containsKey(receivingAccountId)) {
-        const receivingAccountAssets = BigInt(this.accountAssets.get(receivingAccountId));
-        const receivingAccountNewAssets = receivingAccountAssets + BigInt(quantity);
-        this.accountAssets.set(receivingAccountId, receivingAccountNewAssets.toString());
-        return 
+      const receivingAccountAssets = BigInt(this.accountAssets.get(receivingAccountId));
+      const receivingAccountNewAssets = receivingAccountAssets + BigInt(quantity);
+      this.accountAssets.set(receivingAccountId, receivingAccountNewAssets.toString());
+      return;
     }
     this.accountAssets.set(receivingAccountId, quantity);
   }
