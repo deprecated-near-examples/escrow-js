@@ -47,7 +47,7 @@ export class EscrowContract {
   @call({})
   approve_escrow({}) {
     const buyerAccountId = near.predecessorAccountId();
-    assert(this.accountsValueLocked.contains(buyerAccountId), "Cannot approve escrow purchase before escrowing");
+    assert(this.accountsValueLocked.containsKey(buyerAccountId), "Cannot approve escrow purchase before escrowing");
     const sellerAccountId = this.accountsReceivers.get(buyerAccountId);
     const amount = BigInt(this.accountsValueLocked.get(buyerAccountId));
     this.internalSendNEAR(sellerAccountId, amount);
