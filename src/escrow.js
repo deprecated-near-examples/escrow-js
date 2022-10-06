@@ -16,6 +16,13 @@ export class EscrowContract {
     near.promiseReturn(transferPromiseId);
   }
 
+  internalCompleteTransaction(sellerAccountId, amount, buyerAccountId) {
+    this.internalSendNEAR(sellerAccountId, amount);
+    this.accountsReceivers.delete(buyerAccountId);
+    this.accountsValueLocked.delete(buyerAccountId);
+    this.accountsTimeCreated.delete(buyerAccountId);
+  }
+
   @call({ payableFunction: true })
   purchase_in_escrow({ seller_account_id }) {
     const buyerAccountId = near.predecessorAccountId();
@@ -32,28 +39,22 @@ export class EscrowContract {
 
   @call({})
   escrow_timeout_scan({}) {
-    for (const [account_id, time_created] of this.accountsTimeCreated) {
-      if (BigInt(time_created) + 86400 < near.blockTimestamp()) {
-        const receiver_id = this.accountsReceivers.get(account_id);
-        const amount = BigInt(this.accountsValueLocked.get(account_id));
-        this.internalSendNEAR(receiver_id, amount);
-        this.accountsReceivers.delete(account_id);
-        this.accountsValueLocked.delete(account_id);
-        this.accountsTimeCreated.delete(account_id);
+    for (const [buyerAccountId, timeCreatedStr] of this.accountsTimeCreated) {
+      if (BigInt(timeCreatedStr) + 86400 < near.blockTimestamp()) {
+        const receiver_id = this.accountsReceivers.get(buyerAccountId);
+        const amount = BigInt(this.accountsValueLocked.get(buyerAccountId));
+        this.internalCompleteTransaction(receiver_id, amount, buyerAccountId);
       }
     }
   }
 
   @call({})
   approve_escrow({}) {
-    const buyerAccountId = near.predecessorAccountId();
     assert(this.accountsValueLocked.containsKey(buyerAccountId), "Cannot approve escrow purchase before escrowing");
+    const buyerAccountId = near.predecessorAccountId();
     const sellerAccountId = this.accountsReceivers.get(buyerAccountId);
     const amount = BigInt(this.accountsValueLocked.get(buyerAccountId));
-    this.internalSendNEAR(sellerAccountId, amount);
-    this.accountsReceivers.delete(buyerAccountId);
-    this.accountsValueLocked.delete(buyerAccountId);
-    this.accountsTimeCreated.delete(buyerAccountId);
+    this.internalCompleteTransaction(sellerAccountId, amount, buyerAccountId);
   }
 
   @call({})
@@ -64,10 +65,7 @@ export class EscrowContract {
       throw new Error(`No escrow purchase found for buyer: ${buyerAccountId}`);
     }
     const amount = BigInt(amountStr);
-    this.internalSendNEAR(buyerAccountId, amount);
-    this.accountsReceivers.delete(buyerAccountId);
-    this.accountsValueLocked.delete(buyerAccountId);
-    this.accountsTimeCreated.delete(buyerAccountId);
+    this.internalCompleteTransaction(buyerAccountId, amount, buyerAccountId);  // return funds to buyer
     // TODO: call asset contract to transfer the asset back to the seller_account_id
   }
 
