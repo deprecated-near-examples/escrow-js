@@ -5,7 +5,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "ava"
+    "build": "npm run build:escrow && npm run build:assets",
+      "build:escrow": "near-sdk-js build contracts/escrow.js build/escrow.wasm",
+      "build:assets": "near-sdk-js build contracts/assets.js build/assets.wasm",
+    "test": "ava --timeout=2m"
   },
   "repository": {
     "type": "git",
@@ -21,6 +24,7 @@
     "near-sdk-js": "^0.5.0"
   },
   "devDependencies": {
-    "ava": "^4.3.3"
+    "ava": "^4.3.3",
+    "near-workspaces": "^3.2.2"
   }
 }
