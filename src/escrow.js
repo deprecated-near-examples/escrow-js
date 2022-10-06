@@ -45,6 +45,18 @@ export class EscrowContract {
   }
 
   @call({})
+  approve_escrow({}) {
+    const buyerAccountId = near.predecessorAccountId();
+    assert(this.accountsValueLocked.contains(buyerAccountId), "Cannot approve escrow purchase before escrowing");
+    const sellerAccountId = this.accountsReceivers.get(buyerAccountId);
+    const amount = BigInt(this.accountsValueLocked.get(buyerAccountId));
+    this.internalSendNEAR(sellerAccountId, amount);
+    this.accountsReceivers.delete(buyerAccountId);
+    this.accountsValueLocked.delete(buyerAccountId);
+    this.accountsTimeCreated.delete(buyerAccountId);
+  }
+
+  @call({})
   cancel_escrow_transaction({}) {
     const buyerAccountId = near.predecessorAccountId();
     const amountStr = this.accountsValueLocked.get(buyerAccountId);
