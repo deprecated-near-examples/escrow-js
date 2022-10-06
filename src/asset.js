@@ -4,6 +4,7 @@ import { call, LookupMap, NearBindgen, assert, near, view } from "near-sdk-js";
 export class AssetContract {
   ESCROW_CONTRACT_ID = "escrow.testnet";
   ASSET_PRICE = "1" + "0".repeat(23); // 0.1 NEAR
+  OWNER_CONTRACT_ID = "";
   totalSupply = "0";
   accountAssets = new LookupMap("aa");
 
@@ -13,6 +14,7 @@ export class AssetContract {
     assert(this.totalSupply === "0", "Contract is already initialized");
     this.totalSupply = total_supply;
     this.accountAssets.set(owner_id, this.totalSupply);
+    this.OWNER_CONTRACT_ID = near.predecessorAccountId();
   }
 
   @view({})
