@@ -6,7 +6,6 @@ export class EscrowContract {
   accountsReceivers = new LookupMap("ea");
   accountsValueLocked = new LookupMap("avl");
   accountsTimeCreated = new LookupMap("atc");
-  accountCronCatHash = "";
 
   internalSendNEAR(receivingAccountId, amountBigInt) {
     assert(amountBigInt > BigInt("0"), "The amount should be a positive number");
