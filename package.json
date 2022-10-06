@@ -1,0 +1,19 @@
+{
+  "name": "escrow",
+  "version": "1.0.0",
+  "description": "simple escrow smart contract example in javascript",
+  "main": "index.js",
+  "scripts": {
+    "test": "ava"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/idea404/escrow-js.git"
+  },
+  "author": "Dennis",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/idea404/escrow-js/issues"
+  },
+  "homepage": "https://github.com/idea404/escrow-js#readme"
+}
