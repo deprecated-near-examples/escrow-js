@@ -1,7 +1,7 @@
 import { call, LookupMap, NearBindgen, view, assert, near } from "near-sdk-js";
 
-@NearBindgen({ initRequired: true })
-export class FungibleToken {
+@NearBindgen({})
+export class EscrowContract {
   accountsReceivers = new LookupMap("ea");
   accountsValueLocked = new LookupMap("avl");
   accountsTimeCreated = new LookupMap("atc");
