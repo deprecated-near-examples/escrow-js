@@ -13,11 +13,11 @@ test.beforeEach(async (t) => {
   const assets = await root.devDeploy("./build/assets.wasm", {
     method: "init",
     args: {
-        owner_id: root.accountId, 
-        total_supply: "1000",
-        escrow_contract_id: escrow.accountId,
-        asset_price: "1" + "0".repeat(23) // 0.1 NEAR per asset
-    }
+      owner_id: root.accountId,
+      total_supply: "1000",
+      escrow_contract_id: escrow.accountId,
+      asset_price: "1" + "0".repeat(23), // 0.1 NEAR per asset
+    },
   });
 
   // Create test accounts
@@ -35,6 +35,8 @@ test.afterEach.always(async (t) => {
   });
 });
 
-test("transfer asset", async (t) => {
-  t.pass();
+test("should return asset count for root account", async (t) => {
+  const { root, assets } = t.context.accounts;
+  const amount = await assets.view("get_account_assets", { account_id: root.accountId });
+  t.is(amount, "1000");
 });

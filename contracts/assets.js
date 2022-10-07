@@ -27,6 +27,11 @@ export class AssetContract {
     return this.totalSupply;
   }
 
+  @view({})
+  get_account_assets({ account_id }) {
+    return this.accountAssets.get(account_id);
+  }
+
   @call({})
   transfer_asset({ quantity, from_account_id, to_account_id }) {
     assert(near.predecessorAccountId() === this.escrowContractId, "Only escrow contract can call this method");
