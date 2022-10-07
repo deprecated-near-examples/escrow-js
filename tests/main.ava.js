@@ -1,4 +1,4 @@
-import { Worker } from "near-workspaces";
+import { NEAR, Worker } from "near-workspaces";
 import test from "ava";
 
 test.beforeEach(async (t) => {
@@ -39,4 +39,29 @@ test("should return asset count for root account", async (t) => {
   const { root, assets } = t.context.accounts;
   const amount = await assets.view("get_account_assets", { account_id: root.accountId });
   t.is(amount, "1000");
+});
+
+test("test alice purchases 10 assets from root on escrow", async (t) => {
+  const { root, alice, escrow, assets } = t.context.accounts;
+
+  // get asset price
+  const assetPrice = await assets.view("get_asset_price");
+  t.is(assetPrice, "1" + "0".repeat(23));
+
+  // Alice purchases 10 assets from root
+  await alice.call(escrow, "purchase_in_escrow", {
+    seller_account_id: root.accountId,
+    asset_contract_id: assets.accountId,
+    asset_price: assetPrice
+  }, {
+    attachedDeposit: NEAR.parse("1.01 N").toString(),
+  });
+
+  // Check Alice's balance
+  const aliceBalance = await assets.view("get_account_assets", { account_id: alice.accountId });
+  t.is(aliceBalance, "10");
+
+  // Check root's balance
+  const rootBalance = await assets.view("get_account_assets", { account_id: root.accountId });
+  t.is(rootBalance, "990");
 });
