@@ -5,7 +5,9 @@ export class EscrowContract {
   GAS_FEE = 10000000000000; // 100 TGAS
   accountsReceivers = new LookupMap("ea");
   accountsValueLocked = new LookupMap("avl");
+  accountsAssets = new LookupMap("aa");
   accountsTimeCreated = new LookupMap("atc");
+  accountsAssetContractId = new LookupMap("aac");
 
   internalSendNEAR(receivingAccountId, amountBigInt) {
     assert(amountBigInt > BigInt("0"), "The amount should be a positive number");
@@ -18,9 +20,11 @@ export class EscrowContract {
 
   internalCompleteNEARTransaction(sellerAccountId, amountBigInt, buyerAccountId) {
     this.internalSendNEAR(sellerAccountId, amountBigInt);
-    this.accountsReceivers.delete(buyerAccountId);
-    this.accountsValueLocked.delete(buyerAccountId);
-    this.accountsTimeCreated.delete(buyerAccountId);
+    this.accountsReceivers.remove(buyerAccountId);
+    this.accountsValueLocked.remove(buyerAccountId);
+    this.accountsAssets.remove(buyerAccountId);
+    this.accountsAssetContractId.remove(buyerAccountId);
+    this.accountsTimeCreated.remove(buyerAccountId);
   }
 
   internalCrossContractTransferAsset(assetContractId, quantityBigInt, fromAccountId, toAccountId) {
@@ -45,10 +49,12 @@ export class EscrowContract {
     assert(!this.accountsValueLocked.containsKey(buyerAccountId), "Cannot escrow purchase twice  before completing one first: feature not implemented");
     assert(BigInt(asset_price) > 0, "Asset price must be a positive number");
     assert(BigInt(asset_price) + BigInt(this.GAS_FEE) <= amount, `Not enough balance ${amount} to cover transfer of ${asset_price} yoctoNEAR and ${this.GAS_FEE} yoctoNEAR for gas`);
+    const quantity = (amount - BigInt(this.GAS_FEE)) / BigInt(asset_price);
     this.accountsReceivers.set(buyerAccountId, seller_account_id);
     this.accountsValueLocked.set(buyerAccountId, amount.toString());
+    this.accountsAssets.set(buyerAccountId, quantity.toString());
+    this.accountsAssetContractId.set(buyerAccountId, asset_contract_id);
     this.accountsTimeCreated.set(buyerAccountId, near.blockTimestamp().toString());
-    const quantity = (amount - BigInt(this.GAS_FEE)) / BigInt(asset_price);
     this.internalCrossContractTransferAsset(asset_contract_id, quantity, seller_account_id, buyerAccountId);
   }
 
@@ -64,7 +70,7 @@ export class EscrowContract {
   }
 
   @call({})
-  approve_escrow({}) {
+  approve_purchase({}) {
     assert(this.accountsValueLocked.containsKey(buyerAccountId), "Cannot approve escrow purchase before escrowing");
     const buyerAccountId = near.predecessorAccountId();
     const sellerAccountId = this.accountsReceivers.get(buyerAccountId);
@@ -73,16 +79,16 @@ export class EscrowContract {
   }
 
   @call({})
-  cancel_escrow_transaction({}) {
+  cancel_purchase({}) {
     const buyerAccountId = near.predecessorAccountId();
     const amountStr = this.accountsValueLocked.get(buyerAccountId);
-    if (!amountStr) {
-      throw new Error(`No escrow purchase found for buyer: ${buyerAccountId}`);
-    }
+    assert(amountStr, `No escrow purchase found for buyer: ${buyerAccountId}`);
     const amount = BigInt(amountStr);
-    this.internalCompleteNEARTransaction(buyerAccountId, amount, buyerAccountId); // return funds to buyer
     const sellerAccountId = this.accountsReceivers.get(buyerAccountId);
-    this.internalCrossContractTransferAsset(asset_contract_id, amount, buyerAccountId, sellerAccountId);
+    const assetContractId = this.accountsAssetContractId.get(buyerAccountId);
+    const quantity = BigInt(this.accountsAssets.get(buyerAccountId));
+    this.internalCompleteNEARTransaction(buyerAccountId, amount, buyerAccountId); // return funds to buyer
+    this.internalCrossContractTransferAsset(assetContractId, quantity, buyerAccountId, sellerAccountId);
   }
 
   @view({})
