@@ -48,6 +48,10 @@ test("alice purchases 10 assets from root on escrow", async (t) => {
   const assetPrice = await assets.view("get_asset_price");
   t.is(assetPrice, "1" + "0".repeat(23));
 
+  // get root NEAR balance
+  const rootBeforeNearBalance = await root.balance();
+  t.is(rootBeforeNearBalance.total.toHuman().substring(0, 5), "1,049");
+
   // Alice purchases 10 assets from root
   await alice.call(
     escrow,
@@ -69,6 +73,10 @@ test("alice purchases 10 assets from root on escrow", async (t) => {
   // Check root's balance
   const rootBalance = await assets.view("get_account_assets", { account_id: root.accountId });
   t.is(rootBalance, "990");
+
+  // Check root NEAR balance
+  const rootAfterNearBalance = await root.balance();
+  t.is(rootAfterNearBalance.total.toHuman().substring(0, 5), "1,049");
 });
 
 test("alice purchases 10 assets from root on escrow and then cancels", async (t) => {
