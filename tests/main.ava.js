@@ -235,7 +235,7 @@ test("alice purchases 10 assets from root and then approves escrow purchase", as
 });
 
 
-test.only("escrow timeout scan after alice purchases 10 assets from root", async (t) => {
+test("escrow timeout scan after alice purchases 10 assets from root", async (t) => {
   const { root, alice, escrow, assets } = t.context.accounts;
 
   // get asset price
