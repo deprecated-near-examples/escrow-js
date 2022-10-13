@@ -1,4 +1,4 @@
-import { call, LookupMap, NearBindgen, view, assert, near, NearPromise } from "near-sdk-js";
+import { call, LookupMap, NearBindgen, view, assert, near, UnorderedMap } from "near-sdk-js";
 
 @NearBindgen({})
 export class EscrowContract {
@@ -6,7 +6,7 @@ export class EscrowContract {
   accountsReceivers = new LookupMap("ea");
   accountsValueLocked = new LookupMap("avl");
   accountsAssets = new LookupMap("aa");
-  accountsTimeCreated = new LookupMap("atc");
+  accountsTimeCreated = new UnorderedMap("atc");
   accountsAssetContractId = new LookupMap("aac");
 
   internalSendNEAR(receivingAccountId, amountBigInt) {
@@ -61,7 +61,12 @@ export class EscrowContract {
   @call({})
   escrow_timeout_scan({}) {
     for (const [buyerAccountId, timeCreatedStr] of this.accountsTimeCreated) {
-      if (BigInt(timeCreatedStr) + 86400 < near.blockTimestamp()) {
+      near.log(`Scanning escrow for buyer: ${buyerAccountId}`);
+      near.log(`Time created: ${timeCreatedStr}`);
+      near.log(`Current time: ${near.blockTimestamp().toString()}`);
+      const timeCreated = BigInt(timeCreatedStr);
+      if (timeCreated + BigInt(86_400_000_000_000) < near.blockTimestamp()) {  // 24 hours
+        near.log(`Escrow timed out for buyer: ${buyerAccountId}`);
         const receiver_id = this.accountsReceivers.get(buyerAccountId);
         const amount = BigInt(this.accountsValueLocked.get(buyerAccountId));
         this.internalCompleteNEARTransaction(receiver_id, amount, buyerAccountId);
@@ -71,8 +76,8 @@ export class EscrowContract {
 
   @call({})
   approve_purchase({}) {
-    assert(this.accountsValueLocked.containsKey(buyerAccountId), "Cannot approve escrow purchase before escrowing");
     const buyerAccountId = near.predecessorAccountId();
+    assert(this.accountsValueLocked.containsKey(buyerAccountId), "Cannot approve escrow purchase before escrowing");
     const sellerAccountId = this.accountsReceivers.get(buyerAccountId);
     const amount = BigInt(this.accountsValueLocked.get(buyerAccountId));
     this.internalCompleteNEARTransaction(sellerAccountId, amount, buyerAccountId);
