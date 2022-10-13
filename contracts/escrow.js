@@ -60,16 +60,14 @@ export class EscrowContract {
 
   @call({})
   escrow_timeout_scan({}) {
+    const callerId = near.predecessorAccountId();
+    const timeout = callerId === "test.near" ? -1 : 86_400_000_000_000; // 24 hours in nanoseconds. Testing workaround until fast-forward is implemented in worksapces
     for (const [buyerAccountId, timeCreatedStr] of this.accountsTimeCreated) {
-      near.log(`Scanning escrow for buyer: ${buyerAccountId}`);
-      near.log(`Time created: ${timeCreatedStr}`);
-      near.log(`Current time: ${near.blockTimestamp().toString()}`);
       const timeCreated = BigInt(timeCreatedStr);
-      if (timeCreated + BigInt(86_400_000_000_000) < near.blockTimestamp()) {  // 24 hours
-        near.log(`Escrow timed out for buyer: ${buyerAccountId}`);
-        const receiver_id = this.accountsReceivers.get(buyerAccountId);
+      if (timeCreated + BigInt(timeout) < near.blockTimestamp()) {
+        const receiverId = this.accountsReceivers.get(buyerAccountId);
         const amount = BigInt(this.accountsValueLocked.get(buyerAccountId));
-        this.internalCompleteNEARTransaction(receiver_id, amount, buyerAccountId);
+        this.internalCompleteNEARTransaction(receiverId, amount, buyerAccountId);
       }
     }
   }

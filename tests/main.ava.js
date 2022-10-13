@@ -233,3 +233,53 @@ test("alice purchases 10 assets from root and then approves escrow purchase", as
   const rootBalanceAfterApprove = await root.balance();
   t.is(rootBalanceAfterApprove.total.toHuman().substring(0, 13), "1,049,999,601");
 });
+
+
+test.only("escrow timeout scan after alice purchases 10 assets from root", async (t) => {
+  const { root, alice, escrow, assets } = t.context.accounts;
+
+  // get asset price
+  const assetPrice = await assets.view("get_asset_price");
+  t.is(assetPrice, "1" + "0".repeat(23));
+
+  // Alice NEAR balance before purchase
+  const aliceBeforeNearBalance = await alice.balance();
+  t.is(aliceBeforeNearBalance.total.toHuman().substring(0, 5), "100 N");
+
+  // root NEAR Balance before
+  const rootBeforeNearBalance = await root.balance();
+  t.is(rootBeforeNearBalance.total.toHuman().substring(0, 13), "1,049,999,599");
+
+  // Alice purchases 10 assets from root
+  await alice.call(
+    escrow,
+    "purchase_in_escrow",
+    {
+      seller_account_id: root.accountId,
+      asset_contract_id: assets.accountId,
+      asset_price: assetPrice,
+    },
+    {
+      attachedDeposit: NEAR.parse("1.01 N").toString(),
+    }
+  );
+
+  // root calls escrow timeout scan
+  await root.call(escrow, "escrow_timeout_scan", {});
+
+  // Check Alice's balance
+  const aliceBalance = await assets.view("get_account_assets", { account_id: alice.accountId });
+  t.is(aliceBalance, "10");
+
+  // Check root's balance
+  const rootBalance = await assets.view("get_account_assets", { account_id: root.accountId });
+  t.is(rootBalance, "990");
+
+  // Check Alice has spent NEAR
+  const aliceBalanceAfterRefund = await alice.balance();
+  t.is(aliceBalanceAfterRefund.total.toHuman().substring(0, 5), "98.98");
+
+  // Check root's NEAR Balance increased by 1 NEAR
+  const rootBalanceAfterRefund = await root.balance();
+  t.is(rootBalanceAfterRefund.total.toHuman().substring(0, 13), "1,049,999,600");
+});
