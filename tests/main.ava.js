@@ -185,7 +185,7 @@ test("alice purchases 10 assets from root on escrow and then transfers to bob", 
   t.is(aliceNEARBalanceAfterTransfer.total.toHuman().substring(0, 5), "98.98");
 });
 
-test.only("alice purchases 10 assets from root and then approves escrow purchase", async (t) => {
+test("alice purchases 10 assets from root and then approves escrow purchase", async (t) => {
   const { root, alice, escrow, assets } = t.context.accounts;
 
   // get asset price
