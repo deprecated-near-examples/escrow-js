@@ -1,4 +1,4 @@
-import { call, LookupMap, NearBindgen, view, assert, near, UnorderedMap } from "near-sdk-js";
+import { call, LookupMap, NearBindgen, view, assert, near, UnorderedMap, NearPromise } from "near-sdk-js";
 
 @NearBindgen({})
 export class EscrowContract {
@@ -49,22 +49,17 @@ export class EscrowContract {
     assert(seller_account_id !== buyerAccountId, "Cannot escrow to the same account");
     assert(buyerAccountId !== near.currentAccountId(), "Cannot escrow from the contract itself");
   
-    const promiseId = near.promiseBatchCreate(asset_contract_id);
-    near.promiseBatchActionFunctionCall(
-      promiseId,
-      "escrow_purchase_asset",
-      JSON.stringify({ seller_account_id, buyer_account_id: buyerAccountId, attached_near: nearAmount.toString() }),
-      0,
-      this.GAS_FEE
-    );
-    near.promiseBatchActionFunctionCall(
-      promiseId,
-      "internalPurchaseEscrow",
-      JSON.stringify({}),
-      0,
-      this.GAS_FEE
-    );
-    near.promiseReturn(promiseId);
+    const promise = NearPromise.new(asset_contract_id)
+      .functionCall("escrow_purchase_asset", JSON.stringify({ 
+        seller_account_id, 
+        buyer_account_id: buyerAccountId,
+        attached_near: nearAmount.toString() 
+      }), 0, this.GAS_FEE)
+      .then(
+        NearPromise.new(near.currentAccountId())
+        .functionCall("internalPurchaseEscrow", JSON.stringify({}), 0, this.GAS_FEE)
+      );
+    return promise.asReturn();
   }
 
   @call({ privateFunction: true })
