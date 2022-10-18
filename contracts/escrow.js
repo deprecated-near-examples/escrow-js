@@ -28,15 +28,14 @@ export class EscrowContract {
   }
 
   internalCrossContractTransferAsset(assetContractId, quantityBigInt, fromAccountId, toAccountId) {
-    const transferPromiseId = near.promiseBatchCreate(assetContractId);
-    near.promiseBatchActionFunctionCall(
-      transferPromiseId,
+    const promise = NearPromise.new(assetContractId);
+    promise.functionCall(
       "transfer_asset",
       JSON.stringify({ quantity: quantityBigInt.toString(), from_account_id: fromAccountId, to_account_id: toAccountId }),
       0,
       this.GAS_FEE
     );
-    near.promiseReturn(transferPromiseId);
+    promise.asReturn();
   }
 
   @call({ payableFunction: true })
