@@ -1,4 +1,4 @@
-import { call, LookupMap, NearBindgen, view, assert, near, UnorderedMap } from "near-sdk-js";
+import { call, LookupMap, NearBindgen, view, assert, near, UnorderedMap, NearPromise } from "near-sdk-js";
 
 @NearBindgen({})
 export class EscrowContract {
@@ -40,28 +40,49 @@ export class EscrowContract {
   }
 
   @call({ payableFunction: true })
-  purchase_in_escrow({ seller_account_id, asset_contract_id, asset_price }) {
+  purchase_in_escrow({ seller_account_id, asset_contract_id }) {
+    const nearAttachedAmount = near.attachedDeposit();
+    const nearAmount = nearAttachedAmount - BigInt(this.GAS_FEE) - BigInt(this.GAS_FEE);
     const buyerAccountId = near.predecessorAccountId();
+    assert(nearAmount > 0, "Must attach a positive amount");
+    assert(!this.accountsValueLocked.containsKey(buyerAccountId), "Cannot escrow purchase twice before completing one first: feature not implemented");
     assert(seller_account_id !== buyerAccountId, "Cannot escrow to the same account");
     assert(buyerAccountId !== near.currentAccountId(), "Cannot escrow from the contract itself");
-    const amount = near.attachedDeposit();
-    assert(amount > 0, "Must attach a positive amount");
-    assert(!this.accountsValueLocked.containsKey(buyerAccountId), "Cannot escrow purchase twice  before completing one first: feature not implemented");
-    assert(BigInt(asset_price) > 0, "Asset price must be a positive number");
-    assert(BigInt(asset_price) + BigInt(this.GAS_FEE) <= amount, `Not enough balance ${amount} to cover transfer of ${asset_price} yoctoNEAR and ${this.GAS_FEE} yoctoNEAR for gas`);
-    const quantity = (amount - BigInt(this.GAS_FEE)) / BigInt(asset_price);
-    this.accountsReceivers.set(buyerAccountId, seller_account_id);
+  
+    const promise = NearPromise.new(asset_contract_id)
+      .functionCall("escrow_purchase_asset", JSON.stringify({ 
+        seller_account_id, 
+        buyer_account_id: buyerAccountId,
+        attached_near: nearAmount.toString() 
+      }), 0, this.GAS_FEE)
+      .then(
+        NearPromise.new(near.currentAccountId())
+        .functionCall("internalPurchaseEscrow", JSON.stringify({}), 0, this.GAS_FEE)
+      );
+    return promise.asReturn();
+  }
+
+  @call({ privateFunction: true })
+  internalPurchaseEscrow() {
+    const promiseObject = JSON.parse(near.promiseResult(0));
+    near.log("promiseObject:", promiseObject);
+    const buyerAccountId = promiseObject["buyer_account_id"];
+    const sellerAccountId = promiseObject["seller_account_id"];
+    const assetContractId = promiseObject["asset_account_id"];
+    const quantity = BigInt(promiseObject["quantity"]);
+
+    this.accountsReceivers.set(buyerAccountId, sellerAccountId);
     this.accountsValueLocked.set(buyerAccountId, amount.toString());
     this.accountsAssets.set(buyerAccountId, quantity.toString());
-    this.accountsAssetContractId.set(buyerAccountId, asset_contract_id);
+    this.accountsAssetContractId.set(buyerAccountId, assetContractId);
     this.accountsTimeCreated.set(buyerAccountId, near.blockTimestamp().toString());
-    this.internalCrossContractTransferAsset(asset_contract_id, quantity, seller_account_id, buyerAccountId);
+    this.internalCrossContractTransferAsset(assetContractId, quantity, sellerAccountId, buyerAccountId);
   }
 
   @call({})
   escrow_timeout_scan({}) {
     const callerId = near.predecessorAccountId();
-    const timeout = callerId === "test.near" ? -1 : 86_400_000_000_000; // 24 hours in nanoseconds. Testing workaround until fast-forward is implemented in worksapces
+    const timeout = callerId === "test.near" ? -1 : 86_400_000_000_000; // 24 hours in nanoseconds. Testing workaround until fast-forward is implemented in workspaces
     for (const [buyerAccountId, timeCreatedStr] of this.accountsTimeCreated) {
       const timeCreated = BigInt(timeCreatedStr);
       if (timeCreated + BigInt(timeout) < near.blockTimestamp()) {

@@ -17,9 +17,21 @@ export class AssetContract {
     this.accountAssets.set(owner_id, this.totalSupply);
   }
 
-  @view({})
-  get_asset_price({}) {
-    return this.assetPrice;
+  @call({})
+  escrow_purchase_asset({ seller_account_id, buyer_account_id, attached_near }) {
+    assert(near.signerAccountId() === "escrow.test.near", `Only escrow contract can call this method but called by ${near.signerAccountId()}`);
+    assert(this.accountAssets.containsKey(seller_account_id), `Seller account ${seller_account_id} does not own any assets`);
+    assert(BigInt(this.assetPrice) <= BigInt(attached_near), `Attached ${attached_near} is not enough to buy the asset`);
+    const quantity = BigInt(attached_near) / BigInt(this.assetPrice);
+
+    const sellerAssets = BigInt(this.accountAssets.get(seller_account_id));
+    assert(sellerAssets >= BigInt(quantity), `Seller account ${seller_account_id} does not own enough (${sellerAssets.toString()} of required ${quantity}) assets`);
+    const sellerNewAssets = sellerAssets - BigInt(quantity);
+    this.accountAssets.set(seller_account_id, sellerNewAssets.toString());
+    const receivingAccountNewAssets = this.accountAssets.containsKey(buyer_account_id) ? BigInt(this.accountAssets.get(buyer_account_id)) + BigInt(quantity) : BigInt(quantity);
+    this.accountAssets.set(buyer_account_id, receivingAccountNewAssets.toString());
+
+    return { seller_account_id, buyer_account_id, quantity, asset_account_id: near.currentAccountId() };
   }
 
   @view({})
