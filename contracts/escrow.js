@@ -1,4 +1,4 @@
-import { call, LookupMap, NearBindgen, view, assert, near, UnorderedMap, NearPromise } from "near-sdk-js";
+import { call, LookupMap, NearBindgen, view, assert, near, UnorderedMap } from "near-sdk-js";
 
 @NearBindgen({})
 export class EscrowContract {
