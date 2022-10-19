@@ -9,7 +9,9 @@ test.beforeEach(async (t) => {
   const root = worker.rootAccount;
 
   // Deploy the contracts
-  const escrow = await root.devDeploy("./build/escrow.wasm");
+  // const escrow = await root.devDeploy("./build/escrow.wasm");
+  const escrow = await root.createSubAccount("escrow");
+  await escrow.deploy("./build/escrow.wasm");
   const assets = await root.devDeploy("./build/assets.wasm", {
     method: "init",
     args: {
@@ -41,12 +43,8 @@ test("should return asset count for root account", async (t) => {
   t.is(amount, "1000");
 });
 
-test("alice purchases 10 assets from root on escrow", async (t) => {
+test.only("alice purchases 10 assets from root on escrow", async (t) => {
   const { root, alice, escrow, assets } = t.context.accounts;
-
-  // get asset price
-  const assetPrice = await assets.view("get_asset_price");
-  t.is(assetPrice, "1" + "0".repeat(23));
 
   // get root NEAR balance
   const rootBeforeNearBalance = await root.balance();
@@ -59,10 +57,10 @@ test("alice purchases 10 assets from root on escrow", async (t) => {
     {
       seller_account_id: root.accountId,
       asset_contract_id: assets.accountId,
-      asset_price: assetPrice,
     },
     {
       attachedDeposit: NEAR.parse("1.01 N").toString(),
+      gas: "300" + "0".repeat(12), // 300 Tgas
     }
   );
 
@@ -93,7 +91,6 @@ test("alice purchases 10 assets from root on escrow and then cancels", async (t)
     {
       seller_account_id: root.accountId,
       asset_contract_id: assets.accountId,
-      asset_price: assetPrice,
     },
     {
       attachedDeposit: NEAR.parse("1.01 N").toString(),
@@ -109,11 +106,7 @@ test("alice purchases 10 assets from root on escrow and then cancels", async (t)
   t.is(rootBalance, "990");
 
   // Alice cancels the purchase
-  await alice.call(escrow, "cancel_purchase", {
-    seller_account_id: root.accountId,
-    asset_contract_id: assets.accountId,
-    asset_price: assetPrice,
-  });
+  await alice.call(escrow, "cancel_purchase", {});
 
   // Check Alice's balance
   const aliceBalanceAfterCancel = await assets.view("get_account_assets", { account_id: alice.accountId });
@@ -142,7 +135,6 @@ test("alice purchases 10 assets from root on escrow and then transfers to bob", 
     {
       seller_account_id: root.accountId,
       asset_contract_id: assets.accountId,
-      asset_price: assetPrice,
     },
     {
       attachedDeposit: NEAR.parse("1.01 N").toString(),
@@ -166,6 +158,17 @@ test("alice purchases 10 assets from root on escrow and then transfers to bob", 
     });
   } catch (error) {
     t.true(error.message.includes("Only escrow contract can call this method"));
+  }
+
+  try {
+    // Alice transfers 10 assets to Bob
+    await alice.call(assets, "escrow_purchase_asset", {
+      attached_near: "1" + "0".repeat(24), // 1 NEAR
+      seller_account_id: alice.accountId,
+      buyer_account_id: bob.accountId,
+    });
+  } catch (error) {
+    t.true(error.message.includes(`Only escrow contract can call this method but called by ${alice.accountId}`));
   }
 
   // Check Alice's balance
@@ -207,7 +210,6 @@ test("alice purchases 10 assets from root and then approves escrow purchase", as
     {
       seller_account_id: root.accountId,
       asset_contract_id: assets.accountId,
-      asset_price: assetPrice,
     },
     {
       attachedDeposit: NEAR.parse("1.01 N").toString(),
@@ -257,7 +259,6 @@ test("escrow timeout scan after alice purchases 10 assets from root", async (t) 
     {
       seller_account_id: root.accountId,
       asset_contract_id: assets.accountId,
-      asset_price: assetPrice,
     },
     {
       attachedDeposit: NEAR.parse("1.01 N").toString(),
@@ -282,4 +283,52 @@ test("escrow timeout scan after alice purchases 10 assets from root", async (t) 
   // Check root's NEAR Balance increased by 1 NEAR
   const rootBalanceAfterRefund = await root.balance();
   t.is(rootBalanceAfterRefund.total.toHuman().substring(0, 13), "1,049,999,600");
+});
+
+test("alice purchases 10 assets from bob, who does not own any assets", async (t) => {
+  const { alice, bob, escrow, assets } = t.context.accounts;
+
+  // get asset price
+  const assetPrice = await assets.view("get_asset_price");
+  t.is(assetPrice, "1" + "0".repeat(23));
+
+  // Alice NEAR balance before purchase
+  const aliceBeforeNearBalance = await alice.balance();
+  t.is(aliceBeforeNearBalance.total.toHuman().substring(0, 5), "100 N");
+
+  // Bob NEAR Balance before
+  const bobBeforeNearBalance = await bob.balance();
+  t.is(bobBeforeNearBalance.total.toHuman().substring(0, 5), "100 N");
+
+  // Alice purchases 10 assets from bob
+  await alice.call(
+    escrow,
+    "purchase_in_escrow",
+    {
+      seller_account_id: bob.accountId,
+      asset_contract_id: assets.accountId,
+    },
+    {
+      attachedDeposit: NEAR.parse("1.01 N").toString(),
+    }
+  );
+
+  // Check Alice's balance
+  const aliceBalance = await assets.view("get_account_assets", { account_id: alice.accountId });
+  t.is(aliceBalance, "10");
+
+  // Check bob's balance
+  const bobBalance = await assets.view("get_account_assets", { account_id: bob.accountId });
+  t.is(bobBalance, null);
+
+  // Alice approves the purchase
+  await alice.call(escrow, "approve_purchase", {});
+
+  // Check Alice's NEAR Balance
+  const aliceBalanceAfterApprove = await alice.balance();
+  t.is(aliceBalanceAfterApprove.total.toHuman().substring(0, 5), "98.98");
+
+  // Check bob's NEAR Balance
+  const bobBalanceAfterApprove = await bob.balance();
+  t.is(bobBalanceAfterApprove.total.toHuman().substring(0, 5), "100 N");
 });

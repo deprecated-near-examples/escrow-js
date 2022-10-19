@@ -2,7 +2,7 @@ import { call, LookupMap, NearBindgen, view, assert, near, UnorderedMap, NearPro
 
 @NearBindgen({})
 export class EscrowContract {
-  GAS_FEE = 10000000000000; // 100 TGAS
+  GAS_FEE = 30_000_000_000_000; // 30 TGAS
   accountsReceivers = new LookupMap("ea");
   accountsValueLocked = new LookupMap("avl");
   accountsAssets = new LookupMap("aa");
@@ -47,7 +47,8 @@ export class EscrowContract {
     assert(!this.accountsValueLocked.containsKey(buyerAccountId), "Cannot escrow purchase twice before completing one first: feature not implemented");
     assert(seller_account_id !== buyerAccountId, "Cannot escrow to the same account");
     assert(buyerAccountId !== near.currentAccountId(), "Cannot escrow from the contract itself");
-  
+    
+    near.log("starting promise sequence");
     const promise = NearPromise.new(asset_contract_id)
       .functionCall("escrow_purchase_asset", JSON.stringify({ 
         seller_account_id, 
@@ -63,19 +64,19 @@ export class EscrowContract {
 
   @call({ privateFunction: true })
   internalPurchaseEscrow() {
-    const promiseObject = JSON.parse(near.promiseResult(0));
-    near.log("promiseObject:", promiseObject);
+    const promiseResult = near.promiseResult(0);
+    const promiseObject = JSON.parse(promiseResult);
     const buyerAccountId = promiseObject["buyer_account_id"];
     const sellerAccountId = promiseObject["seller_account_id"];
     const assetContractId = promiseObject["asset_account_id"];
     const quantity = BigInt(promiseObject["quantity"]);
+    const amount = BigInt(promiseObject["amount"]);
 
     this.accountsReceivers.set(buyerAccountId, sellerAccountId);
     this.accountsValueLocked.set(buyerAccountId, amount.toString());
     this.accountsAssets.set(buyerAccountId, quantity.toString());
     this.accountsAssetContractId.set(buyerAccountId, assetContractId);
     this.accountsTimeCreated.set(buyerAccountId, near.blockTimestamp().toString());
-    this.internalCrossContractTransferAsset(assetContractId, quantity, sellerAccountId, buyerAccountId);
   }
 
   @call({})
