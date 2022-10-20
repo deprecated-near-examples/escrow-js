@@ -15,7 +15,7 @@ export class EscrowContract {
     assert(amountBigInt < near.accountBalance(), `Not enough balance ${near.accountBalance()} to cover transfer of ${amountBigInt} yoctoNEAR`);
     const promise = NearPromise.new(receivingAccountId);
     promise.transfer(amountBigInt);
-    promise.asReturn();
+    promise.onReturn();
   }
 
   internalCompleteNEARTransaction(sellerAccountId, amountBigInt, buyerAccountId) {
@@ -35,7 +35,7 @@ export class EscrowContract {
       0,
       this.GAS_FEE
     );
-    promise.asReturn();
+    promise.onReturn();
   }
 
   @call({ payableFunction: true })
@@ -66,11 +66,11 @@ export class EscrowContract {
   internalPurchaseEscrow() {
     const promiseResult = near.promiseResult(0);
     const promiseObject = JSON.parse(promiseResult);
-    const buyerAccountId = promiseObject["buyer_account_id"];
-    const sellerAccountId = promiseObject["seller_account_id"];
-    const assetContractId = promiseObject["asset_account_id"];
-    const quantity = BigInt(promiseObject["quantity"]);
-    const amount = BigInt(promiseObject["amount"]);
+    const buyerAccountId = promiseObject.buyer_account_id;
+    const sellerAccountId = promiseObject.seller_account_id;
+    const assetContractId = promiseObject.asset_account_id;
+    const quantity = BigInt(promiseObject.quantity);
+    const amount = BigInt(promiseObject.amount);
 
     this.accountsReceivers.set(buyerAccountId, sellerAccountId);
     this.accountsValueLocked.set(buyerAccountId, amount.toString());
