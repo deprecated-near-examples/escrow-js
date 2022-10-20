@@ -19,22 +19,20 @@ export class AssetContract {
 
   @call({})
   escrow_purchase_asset({ seller_account_id, buyer_account_id, attached_near }) {
-    near.log(`Escrow purchase asset from ${seller_account_id} to ${buyer_account_id} for ${attached_near} NEAR`);
     try {
-      assert(near.predecessorAccountId() === this.escrowContractId, `Only escrow contract can call this method but called by ${near.signerAccountId()}`);
+      assert(near.predecessorAccountId() === this.escrowContractId, `Only escrow contract can call this method but called by ${near.predecessorAccountId()}`);
       assert(this.accountAssets.containsKey(seller_account_id), `Seller account ${seller_account_id} does not own any assets`);
       assert(BigInt(this.assetPrice) <= BigInt(attached_near), `Attached ${attached_near} is not enough to buy the asset`);
+      
       const quantity = BigInt(attached_near) / BigInt(this.assetPrice);
-
       const sellerAssets = BigInt(this.accountAssets.get(seller_account_id));
       assert(sellerAssets >= BigInt(quantity), `Seller account ${seller_account_id} does not own enough (${sellerAssets.toString()} of required ${quantity}) assets`);
+      
       const sellerNewAssets = sellerAssets - BigInt(quantity);
       this.accountAssets.set(seller_account_id, sellerNewAssets.toString());
       const receivingAccountNewAssets = this.accountAssets.containsKey(buyer_account_id) ? BigInt(this.accountAssets.get(buyer_account_id)) + BigInt(quantity) : BigInt(quantity);
       this.accountAssets.set(buyer_account_id, receivingAccountNewAssets.toString());
-
-      near.log(`Escrow purchase asset from ${seller_account_id} to ${buyer_account_id} for ${attached_near} NEAR with ${quantity} assets`);
-      return { seller_account_id, buyer_account_id, quantity: quantity.toString(), amount: attached_near, asset_account_id: near.currentAccountId() };
+      return { success: true, seller_account_id, buyer_account_id, quantity: quantity.toString(), amount: attached_near, asset_account_id: near.currentAccountId() };
     } catch (e) {
       near.log("error: ", e, e.message, e.stack);
       return { success: false, error: e, message: e.message, stack: e.stack };
@@ -53,7 +51,7 @@ export class AssetContract {
 
   @call({})
   transfer_asset({ quantity, from_account_id, to_account_id }) {
-    assert(near.predecessorAccountId() === this.escrowContractId, `Only escrow contract can call this method but called by ${near.signerAccountId()}`);
+    assert(near.predecessorAccountId() === this.escrowContractId, `Only escrow contract can call this method but called by ${near.predecessorAccountId()}`);
     const receivingAccountId = to_account_id;
     assert(this.accountAssets.containsKey(from_account_id), `Sender account ${from_account_id} does not own any assets`);
     const senderAssets = BigInt(this.accountAssets.get(from_account_id));

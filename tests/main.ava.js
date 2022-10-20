@@ -151,7 +151,7 @@ test("alice purchases 10 assets from root on escrow and then transfers to bob", 
       to_account_id: bob.accountId,
     });
   } catch (error) {
-    t.true(error.message.includes("Only escrow contract can call this method"));
+    t.true(error.message.includes(`Only escrow contract can call this method but called by ${alice.accountId}`));
   }
 
   try {

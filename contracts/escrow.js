@@ -48,7 +48,6 @@ export class EscrowContract {
     assert(seller_account_id !== buyerAccountId, "Cannot escrow to the same account");
     assert(buyerAccountId !== near.currentAccountId(), "Cannot escrow from the contract itself");
     
-    near.log("starting promise sequence");
     const promise = NearPromise.new(asset_contract_id)
       .functionCall("escrow_purchase_asset", JSON.stringify({ 
         seller_account_id, 
