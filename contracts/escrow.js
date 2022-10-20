@@ -47,6 +47,12 @@ export class EscrowContract {
     assert(!this.accountsValueLocked.containsKey(buyerAccountId), "Cannot escrow purchase twice before completing one first: feature not implemented");
     assert(seller_account_id !== buyerAccountId, "Cannot escrow to the same account");
     assert(buyerAccountId !== near.currentAccountId(), "Cannot escrow from the contract itself");
+
+    this.accountsReceivers.set(buyerAccountId, seller_account_id);
+    this.accountsValueLocked.set(buyerAccountId, nearAttachedAmount.toString());
+    this.accountsAssetContractId.set(buyerAccountId, asset_contract_id);
+    this.accountsTimeCreated.set(buyerAccountId, near.blockTimestamp().toString());
+    this.accountsAssets.set(buyerAccountId, "0");
     
     const promise = NearPromise.new(asset_contract_id)
       .functionCall("escrow_purchase_asset", JSON.stringify({ 
@@ -65,17 +71,15 @@ export class EscrowContract {
   internalPurchaseEscrow() {
     const promiseResult = near.promiseResult(0);
     const promiseObject = JSON.parse(promiseResult);
+    if (promiseObject.success === false) {
+      const amount = BigInt(this.accountsValueLocked.get(promiseObject.buyer_account_id));
+      near.log(`Escrow purchase failed, returning ${amount} yoctoNEAR to: ${promiseObject.buyer_account_id}`);
+      this.internalCompleteNEARTransaction(promiseObject.buyer_account_id, amount, promiseObject.buyer_account_id);
+      return;
+    }
     const buyerAccountId = promiseObject.buyer_account_id;
-    const sellerAccountId = promiseObject.seller_account_id;
-    const assetContractId = promiseObject.asset_account_id;
     const quantity = BigInt(promiseObject.quantity);
-    const amount = BigInt(promiseObject.amount);
-
-    this.accountsReceivers.set(buyerAccountId, sellerAccountId);
-    this.accountsValueLocked.set(buyerAccountId, amount.toString());
     this.accountsAssets.set(buyerAccountId, quantity.toString());
-    this.accountsAssetContractId.set(buyerAccountId, assetContractId);
-    this.accountsTimeCreated.set(buyerAccountId, near.blockTimestamp().toString());
   }
 
   @call({})

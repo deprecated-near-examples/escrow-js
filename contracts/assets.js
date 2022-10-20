@@ -35,7 +35,7 @@ export class AssetContract {
       return { success: true, seller_account_id, buyer_account_id, quantity: quantity.toString(), amount: attached_near, asset_account_id: near.currentAccountId() };
     } catch (e) {
       near.log("error: ", e, e.message, e.stack);
-      return { success: false, error: e, message: e.message, stack: e.stack };
+      return { success: false, error: e, message: e.message, stack: e.stack, seller_account_id, buyer_account_id, amount: attached_near, asset_account_id: near.currentAccountId() };
     }
   }
 

@@ -227,7 +227,6 @@ test("alice purchases 10 assets from root and then approves escrow purchase", as
   t.is(rootBalanceAfterApprove.total.toHuman().substring(0, 13), "1,049,999,601");
 });
 
-
 test("escrow timeout scan after alice purchases 10 assets from root", async (t) => {
   const { root, alice, escrow, assets } = t.context.accounts;
 
@@ -273,7 +272,7 @@ test("escrow timeout scan after alice purchases 10 assets from root", async (t) 
   t.is(rootBalanceAfterRefund.total.toHuman().substring(0, 13), "1,049,999,601");
 });
 
-test.skip("alice purchases 10 assets from bob, who does not own any assets", async (t) => {
+test("alice purchases 10 assets from bob, who does not own any assets", async (t) => {
   const { alice, bob, escrow, assets } = t.context.accounts;
 
   // Alice NEAR balance before purchase
@@ -300,20 +299,17 @@ test.skip("alice purchases 10 assets from bob, who does not own any assets", asy
 
   // Check Alice's balance
   const aliceBalance = await assets.view("get_account_assets", { account_id: alice.accountId });
-  t.is(aliceBalance, "10");
+  t.is(aliceBalance, null);
 
   // Check bob's balance
   const bobBalance = await assets.view("get_account_assets", { account_id: bob.accountId });
   t.is(bobBalance, null);
 
-  // Alice approves the purchase
-  await alice.call(escrow, "approve_purchase", {});
-
   // Check Alice's NEAR Balance
-  const aliceBalanceAfterApprove = await alice.balance();
-  t.is(aliceBalanceAfterApprove.total.toHuman().substring(0, 5), "98.98");
+  const aliceBalanceAfterCancel = await alice.balance();
+  t.is(aliceBalanceAfterCancel.total.toHuman().substring(0, 5), "99.99");
 
   // Check bob's NEAR Balance
-  const bobBalanceAfterApprove = await bob.balance();
-  t.is(bobBalanceAfterApprove.total.toHuman().substring(0, 5), "100 N");
+  const bobBalanceAfterCancel = await bob.balance();
+  t.is(bobBalanceAfterCancel.total.toHuman().substring(0, 5), "100 N");
 });
