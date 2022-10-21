@@ -34,7 +34,9 @@ npm test
 ## What this Example Covers
 
 1. How to write a smart contract in JavaScript
-   a. How to perform cross-contract calls and pass data among them in JavaScript
+
+    a. How to perform cross-contract calls and pass data among them in JavaScript
+
 2. How to write integration tests for a smart contract in JavaScript
 
 ## Flows Covered in the Example
