@@ -85,7 +85,7 @@ export class EscrowContract {
   @call({})
   escrow_timeout_scan({}) {
     const callerId = near.predecessorAccountId();
-    const timeout = callerId === "test.near" ? -1 : 86_400_000_000_000; // 24 hours in nanoseconds. Testing workaround until fast-forward is implemented in workspaces
+    const timeout = callerId === "test.near" ? -1 : 86_400_000_000_000; // 24 hours in nanoseconds. Testing workaround until fast-forward is implemented in workspaces-js
     for (const [buyerAccountId, timeCreatedStr] of this.accountsTimeCreated) {
       const timeCreated = BigInt(timeCreatedStr);
       if (timeCreated + BigInt(timeout) < near.blockTimestamp()) {
