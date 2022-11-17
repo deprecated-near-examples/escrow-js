@@ -2,7 +2,7 @@ import { call, LookupMap, NearBindgen, view, assert, near, UnorderedMap, NearPro
 
 @NearBindgen({})
 export class EscrowContract {
-  GAS_FEE = 30_000_000_000_000; // 30 TGAS
+  // GAS_FEE = 300_000_000_000_000; // 300 TGAS
   accountsReceivers = new LookupMap("ea");
   accountsValueLocked = new LookupMap("avl");
   accountsAssets = new LookupMap("aa");
@@ -30,10 +30,10 @@ export class EscrowContract {
   internalCrossContractTransferAsset(assetContractId, quantityBigInt, fromAccountId, toAccountId) {
     const promise = NearPromise.new(assetContractId);
     promise.functionCall(
-      "transfer_asset",
-      JSON.stringify({ quantity: quantityBigInt.toString(), from_account_id: fromAccountId, to_account_id: toAccountId }),
-      0,
-      this.GAS_FEE
+        "transfer_asset",
+        JSON.stringify({ quantity: quantityBigInt.toString(), from_account_id: fromAccountId, to_account_id: toAccountId }),
+        0,
+        30_000_000_000_000
     );
     promise.onReturn();
   }
@@ -41,7 +41,7 @@ export class EscrowContract {
   @call({ payableFunction: true })
   purchase_in_escrow({ seller_account_id, asset_contract_id }) {
     const nearAttachedAmount = near.attachedDeposit();
-    const nearAmount = nearAttachedAmount - BigInt(this.GAS_FEE) - BigInt(this.GAS_FEE);
+    const nearAmount = nearAttachedAmount - BigInt(30_000_000_000_000);
     const buyerAccountId = near.predecessorAccountId();
     assert(nearAmount > 0, "Must attach a positive amount");
     assert(!this.accountsValueLocked.containsKey(buyerAccountId), "Cannot escrow purchase twice before completing one first: feature not implemented");
@@ -53,17 +53,17 @@ export class EscrowContract {
     this.accountsAssetContractId.set(buyerAccountId, asset_contract_id);
     this.accountsTimeCreated.set(buyerAccountId, near.blockTimestamp().toString());
     this.accountsAssets.set(buyerAccountId, "0");
-    
+
     const promise = NearPromise.new(asset_contract_id)
-      .functionCall("escrow_purchase_asset", JSON.stringify({ 
-        seller_account_id, 
-        buyer_account_id: buyerAccountId,
-        attached_near: nearAmount.toString() 
-      }), 0, this.GAS_FEE)
-      .then(
-        NearPromise.new(near.currentAccountId())
-        .functionCall("internalPurchaseEscrow", JSON.stringify({}), 0, this.GAS_FEE)
-      );
+        .functionCall("escrow_purchase_asset", JSON.stringify({
+          seller_account_id,
+          buyer_account_id: buyerAccountId,
+          attached_near: nearAmount.toString()
+        }), 0, 30_000_000_000_000)
+        .then(
+            NearPromise.new(near.currentAccountId())
+                .functionCall("internalPurchaseEscrow", JSON.stringify({}), 0, 30_000_000_000_000)
+        );
     return promise.asReturn();
   }
 

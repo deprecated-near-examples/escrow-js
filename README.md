@@ -35,7 +35,7 @@ npm test
 
 1. How to write a smart contract in JavaScript
 
-    a. How to perform cross-contract calls and pass data among them in JavaScript
+   a. How to perform cross-contract calls and pass data among them in JavaScript
 
 2. How to write integration tests for a smart contract in JavaScript
 
@@ -47,3 +47,60 @@ npm test
 4. User A purchases a product in-escrow from User B and approves the purchase
 5. User A purchases a product in-escrow from User B and a day passes without approval
 6. User A purchases a product in-escrow from User B and attempts to transfer the product to User C
+
+
+## Detailed Guide in Running the Example
+
+1. Login to your NEAR account
+
+```bash
+near login
+```
+
+2. Create sub accounts for deploying the contracts
+
+```bash
+near create-account --accountId <your-escrow-testnet-account-id> --masterAccount <your-testnet-account-id> --initialBalance <your-escrow-testnet-account-balance>
+```
+
+```bash
+near create-account --accountId <your-assets-testnet-account-id> --masterAccount <your-testnet-account-id> --initialBalance <your-assets-testnet-account-balance>
+```
+
+3. Deploy the Contracts
+
+```bash
+near deploy --wasmFile build/escrow.wasm --accountId <your-escrow-testnet-account-id>
+```
+
+```bash
+near deploy --wasmFile build/assets.wasm --accountId <your-assets-testnet-account-id>
+```
+
+4. Initialize the Assets Contract
+
+```bash
+near call <your-assets-testnet-account-id> init '{"owner_id": "<your-asset-owner-account-id>", "total_supply": "1000", "escrow_contract_id": "<your-escrow-testnet-account-id>", "asset_price": "100000000000000000000000"}' --accountId <your-assets-testnet-account-id>
+```
+
+5. Perform a Purchase on Escrow
+
+```bash
+near call <your-escrow-testnet-account-id> purchase_in_escrow '{"seller_account_id": "<your-asset-owner-account-id>", "asset_contract_id ": "<your-assets-testnet-account-id>"}' --accountId <your-buyer-account-id> --amount 0.11 --gas=300000000000000
+```
+
+6. Check the Balance of the Buyer Account
+
+```bash
+near view <your-assets-testnet-account-id> get_account_assets '{"account_id": "<your-buyer-account-id>"}'
+```
+
+```bash
+near state <seller-account-id>
+```
+
+7. Approve the Purchase
+
+```bash
+near call <your-escrow-testnet-account-id> approve_purchase '{}' --accountId <your-buyer-account-id>
+```
