@@ -2,7 +2,7 @@ import { call, LookupMap, NearBindgen, view, assert, near, UnorderedMap, NearPro
 
 @NearBindgen({})
 export class EscrowContract {
-  // GAS_FEE = 300_000_000_000_000; // 300 TGAS
+  GAS_FEE = 30_000_000_000_000; // 30 TGAS
   accountsReceivers = new LookupMap("ea");
   accountsValueLocked = new LookupMap("avl");
   accountsAssets = new LookupMap("aa");
@@ -33,7 +33,7 @@ export class EscrowContract {
         "transfer_asset",
         JSON.stringify({ quantity: quantityBigInt.toString(), from_account_id: fromAccountId, to_account_id: toAccountId }),
         0,
-        30_000_000_000_000
+        this.GAS_FEE
     );
     promise.onReturn();
   }
@@ -41,7 +41,7 @@ export class EscrowContract {
   @call({ payableFunction: true })
   purchase_in_escrow({ seller_account_id, asset_contract_id }) {
     const nearAttachedAmount = near.attachedDeposit();
-    const nearAmount = nearAttachedAmount - BigInt(30_000_000_000_000);
+    const nearAmount = nearAttachedAmount - BigInt(this.GAS_FEE);
     const buyerAccountId = near.predecessorAccountId();
     assert(nearAmount > 0, "Must attach a positive amount");
     assert(!this.accountsValueLocked.containsKey(buyerAccountId), "Cannot escrow purchase twice before completing one first: feature not implemented");
@@ -59,10 +59,10 @@ export class EscrowContract {
           seller_account_id,
           buyer_account_id: buyerAccountId,
           attached_near: nearAmount.toString()
-        }), 0, 30_000_000_000_000)
+        }), 0, this.GAS_FEE)
         .then(
             NearPromise.new(near.currentAccountId())
-                .functionCall("internalPurchaseEscrow", JSON.stringify({}), 0, 30_000_000_000_000)
+                .functionCall("internalPurchaseEscrow", JSON.stringify({}), 0, this.GAS_FEE)
         );
     return promise.asReturn();
   }
