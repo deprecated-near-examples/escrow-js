@@ -67,7 +67,17 @@ near create-account --accountId <your-escrow-testnet-account-id> --masterAccount
 near create-account --accountId <your-assets-testnet-account-id> --masterAccount <your-testnet-account-id> --initialBalance <your-assets-testnet-account-balance>
 ```
 
-3. Deploy the Contracts
+3. Create sub accounts to simulate users executing a transaction
+
+```bash
+near create-account --accountId <your-asset-owner-account-id> --masterAccount <your-testnet-account-id> --initialBalance <your-asset-owner-account-balance>
+```
+
+```bash
+near create-account --accountId <your-buyer-account-id> --masterAccount <your-testnet-account-id> --initialBalance <your-buyer-account-balance>
+```
+
+4. Deploy the Contracts
 
 ```bash
 near deploy --wasmFile build/escrow.wasm --accountId <your-escrow-testnet-account-id>
@@ -77,19 +87,19 @@ near deploy --wasmFile build/escrow.wasm --accountId <your-escrow-testnet-accoun
 near deploy --wasmFile build/assets.wasm --accountId <your-assets-testnet-account-id>
 ```
 
-4. Initialize the Assets Contract
+5. Initialize the Assets Contract
 
 ```bash
 near call <your-assets-testnet-account-id> init '{"owner_id": "<your-asset-owner-account-id>", "total_supply": "1000", "escrow_contract_id": "<your-escrow-testnet-account-id>", "asset_price": "100000000000000000000000"}' --accountId <your-assets-testnet-account-id>
 ```
 
-5. Perform a Purchase on Escrow
+6. Perform a Purchase on Escrow
 
 ```bash
 near call <your-escrow-testnet-account-id> purchase_in_escrow '{"seller_account_id": "<your-asset-owner-account-id>", "asset_contract_id ": "<your-assets-testnet-account-id>"}' --accountId <your-buyer-account-id> --amount 0.11 --gas=300000000000000
 ```
 
-6. Check the Balance of the Buyer Account
+7. Check the Balance of the Buyer Account
 
 ```bash
 near view <your-assets-testnet-account-id> get_account_assets '{"account_id": "<your-buyer-account-id>"}'
@@ -99,7 +109,7 @@ near view <your-assets-testnet-account-id> get_account_assets '{"account_id": "<
 near state <your-asset-owner-account-id>
 ```
 
-7. Approve the Purchase
+8. Approve the Purchase
 
 ```bash
 near call <your-escrow-testnet-account-id> approve_purchase '{}' --accountId <your-buyer-account-id>
