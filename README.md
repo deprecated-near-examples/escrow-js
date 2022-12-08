@@ -96,7 +96,7 @@ near view <your-assets-testnet-account-id> get_account_assets '{"account_id": "<
 ```
 
 ```bash
-near state <seller-account-id>
+near state <your-asset-owner-account-id>
 ```
 
 7. Approve the Purchase
