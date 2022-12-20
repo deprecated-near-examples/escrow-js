@@ -51,6 +51,20 @@ npm test
 
 ## Detailed Guide in Running the Example
 
+---
+
+### Required Accounts 
+
+```bash 
+your-testnet-account-id        # <-- Your usual testnet account
+your-escrow-testnet-account-id # <-- The testnet account holding this escrow contract/program
+your-assets-testnet-account-id # <-- The testnet account holding the assets contract/program
+your-asset-owner-account-id    # <-- The testnet account that owns the assets seeking $NEAR for them
+your-buyer-account-id          # <-- The testnet account that owns $NEAR seeking to buy assets
+```
+
+---
+
 1. Login to your NEAR account
 
 ```bash
