@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/idea404/escrow-js#readme",
   "dependencies": {
-    "near-sdk-js": "^0.7.0"
+    "near-sdk-js": "1.0.0"
   },
   "devDependencies": {
     "ava": "^4.3.3",
